@@ -1,8 +1,5 @@
 myhostname = mail.tecadmin.net
 mydomain = tecadmin.net
-myorigin = $mydomain
+myorigin = /etc/mailname
 inet_interfaces = all
-mydestination = $myhostname, localhost, $mydomain
-mynetworks = 127.0.0.0/8, /32
-relay_domains = $mydestination
-home_mailbox = Maildir/
+mynetworks = 127.0.0.1/32 192.168.0.0/16 172.16.0.0/12 10.0.0.0/8
