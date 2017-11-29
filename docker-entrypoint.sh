@@ -11,6 +11,11 @@ then
     echo "SMTP_RELAY_USERNAME must be set"
     exit 1
 fi
+if [[ ! -z "${SMTP_RELAY_PASSWORD_FILE:-}" ]]
+then
+    echo "SMTP_RELAY_PASSWORD_FILE is set so reading from $SMTP_RELAY_PASSWORD_FILE"
+    SMTP_RELAY_PASSWORD=$(cat $SMTP_RELAY_PASSWORD_FILE)
+fi 
 if [[ -z "${SMTP_RELAY_PASSWORD:-}" ]]
 then
     echo "SMTP_RELAY_PASSWORD must be set"
