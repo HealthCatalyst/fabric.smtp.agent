@@ -6,30 +6,35 @@ echo "my docker-entrypoint.sh"
 
 MYHOSTNAME=${SMTP_HOSTNAME:-imran.com}
 
-if [[ -z "${SMTP_RELAY_USERNAME:-}" ]]
+if [[ ! -z "${SMTP_RELAY_SERVER:-}" ]]
 then
-    echo "SMTP_RELAY_USERNAME must be set"
-    exit 1
-fi
-if [[ ! -z "${SMTP_RELAY_PASSWORD_FILE:-}" ]]
-then
-    echo "SMTP_RELAY_PASSWORD_FILE is set so reading from $SMTP_RELAY_PASSWORD_FILE"
-    SMTP_RELAY_PASSWORD=$(cat $SMTP_RELAY_PASSWORD_FILE)
-fi 
-if [[ -z "${SMTP_RELAY_PASSWORD:-}" ]]
-then
-    echo "SMTP_RELAY_PASSWORD must be set"
-    exit 1
-fi
-if [[ -z "${SMTP_RELAY_SERVER:-}" ]]
-then
-    echo "SMTP_RELAY_SERVER must be set"
-    exit 1
-fi
-if [[ -z "${SMTP_RELAY_PORT:-}" ]]
-then
-    echo "SMTP_RELAY_PORT must be set"
-    exit 1
+    echo "SMTP_RELAY_SERVER is set"
+
+    if [[ -z "${SMTP_RELAY_USERNAME:-}" ]]
+    then
+        echo "SMTP_RELAY_USERNAME must be set"
+        exit 1
+    fi
+    if [[ ! -z "${SMTP_RELAY_PASSWORD_FILE:-}" ]]
+    then
+        echo "SMTP_RELAY_PASSWORD_FILE is set so reading from $SMTP_RELAY_PASSWORD_FILE"
+        SMTP_RELAY_PASSWORD=$(cat $SMTP_RELAY_PASSWORD_FILE)
+    fi 
+    if [[ -z "${SMTP_RELAY_PASSWORD:-}" ]]
+    then
+        echo "SMTP_RELAY_PASSWORD must be set"
+        exit 1
+    fi
+    if [[ -z "${SMTP_RELAY_SERVER:-}" ]]
+    then
+        echo "SMTP_RELAY_SERVER must be set"
+        exit 1
+    fi
+    if [[ -z "${SMTP_RELAY_PORT:-}" ]]
+    then
+        echo "SMTP_RELAY_PORT must be set"
+        exit 1
+    fi
 fi
 
 
@@ -57,18 +62,21 @@ function modify_main_cf() {
     # postconf -e debug_peer_list=smtp.sendgrid.net
     # postconf -e debug_peer_level=3
 
-    # from https://sendgrid.com/docs/Integrate/Mail_Servers/postfix.html
-    echo "[${SMTP_RELAY_SERVER}]:${SMTP_RELAY_PORT} ${SMTP_RELAY_USERNAME}:${SMTP_RELAY_PASSWORD}" > /etc/postfix/sasl_passwd
-    chmod 600 /etc/postfix/sasl_passwd
-    postmap /etc/postfix/sasl_passwd
+    if [[ ! -z "${SMTP_RELAY_SERVER:-}" ]]
+    then
+        # from https://sendgrid.com/docs/Integrate/Mail_Servers/postfix.html
+        echo "[${SMTP_RELAY_SERVER}]:${SMTP_RELAY_PORT} ${SMTP_RELAY_USERNAME}:${SMTP_RELAY_PASSWORD}" > /etc/postfix/sasl_passwd
+        chmod 600 /etc/postfix/sasl_passwd
+        postmap /etc/postfix/sasl_passwd
 
-    postconf -e smtp_sasl_auth_enable=yes
-    postconf -e smtp_sasl_password_maps=hash:/etc/postfix/sasl_passwd
-    postconf -e smtp_sasl_security_options=noanonymous
-    postconf -e smtp_sasl_tls_security_options=noanonymous
-    postconf -e smtp_tls_security_level=encrypt
-    postconf -e header_size_limit=4096000
-    postconf -e relayhost=[${SMTP_RELAY_SERVER}]:${SMTP_RELAY_PORT}
+        postconf -e smtp_sasl_auth_enable=yes
+        postconf -e smtp_sasl_password_maps=hash:/etc/postfix/sasl_passwd
+        postconf -e smtp_sasl_security_options=noanonymous
+        postconf -e smtp_sasl_tls_security_options=noanonymous
+        postconf -e smtp_tls_security_level=encrypt
+        postconf -e header_size_limit=4096000
+        postconf -e relayhost=[${SMTP_RELAY_SERVER}]:${SMTP_RELAY_PORT}
+    fi
 }
 
 # https://sendgrid.com/docs/Integrate/Mail_Servers/postfix.html
