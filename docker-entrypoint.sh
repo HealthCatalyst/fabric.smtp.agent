@@ -5,8 +5,28 @@
 echo "my docker-entrypoint.sh"
 
 MYHOSTNAME=${SMTP_HOSTNAME:-imran.com}
-RELAYUSERNAME=azure_29d1b90e0988a5c9592bb5271f53a839@azure.com
-RELAYPASSWORD=ILoveNLP2017!
+
+if [[ -z "${SMTP_RELAY_USERNAME:-}" ]]
+then
+    echo "SMTP_RELAY_USERNAME must be set"
+    exit 1
+fi
+if [[ -z "${SMTP_RELAY_PASSWORD:-}" ]]
+then
+    echo "SMTP_RELAY_PASSWORD must be set"
+    exit 1
+fi
+if [[ -z "${SMTP_RELAY_SERVER:-}" ]]
+then
+    echo "SMTP_RELAY_SERVER must be set"
+    exit 1
+fi
+if [[ -z "${SMTP_RELAY_PORT:-}" ]]
+then
+    echo "SMTP_RELAY_PORT must be set"
+    exit 1
+fi
+
 
 function get_state {
     echo $(script -c 'postfix status' | grep postfix/postfix-script)
@@ -15,15 +35,16 @@ function get_state {
 function modify_main_cf() {
     # Configuration changes needed in main.cf
     echo "Changing postfix configuration"
-    postconf -e inet_interfaces=localhost
+    postconf -e inet_interfaces=all
     
-    echo "foo"
-
     postconf -e inet_protocols=ipv4
     newaliases
     
-    # postconf -e mynetworks='127.0.0.1/32 192.168.0.0/16 172.16.0.0/12 10.0.0.0/8'
-    # postconf -e smtpd_relay_restrictions='permit_mynetworks permit_sasl_authenticated defer_unauth_destination'
+    #postconf -e mynetworks='127.0.0.1/32 192.168.0.0/16 172.16.0.0/12 10.0.0.0/8'
+
+    #enable all IPs since we'll restrict this to the docker swarm
+    postconf -e mynetworks='0.0.0.0/0'
+    # postconf -e smtpd_relay_restrictions='permit_sasl_authenticated'
     # postconf -e mydomain=${MYHOSTNAME}
     # postconf -e myorigin=${MYHOSTNAME}
     # postconf -e myhostname=mail.${MYHOSTNAME}
@@ -31,7 +52,8 @@ function modify_main_cf() {
     # postconf -e debug_peer_list=smtp.sendgrid.net
     # postconf -e debug_peer_level=3
 
-    echo "[smtp.sendgrid.net]:587 ${RELAYUSERNAME}:${RELAYPASSWORD}" | tee /etc/postfix/sasl_passwd
+    # from https://sendgrid.com/docs/Integrate/Mail_Servers/postfix.html
+    echo "[${SMTP_RELAY_SERVER}]:${SMTP_RELAY_PORT} ${SMTP_RELAY_USERNAME}:${SMTP_RELAY_PASSWORD}" > /etc/postfix/sasl_passwd
     chmod 600 /etc/postfix/sasl_passwd
     postmap /etc/postfix/sasl_passwd
 
@@ -41,7 +63,7 @@ function modify_main_cf() {
     postconf -e smtp_sasl_tls_security_options=noanonymous
     postconf -e smtp_tls_security_level=encrypt
     postconf -e header_size_limit=4096000
-    postconf -e relayhost=[smtp.sendgrid.net]:587
+    postconf -e relayhost=[${SMTP_RELAY_SERVER}]:${SMTP_RELAY_PORT}
 }
 
 # https://sendgrid.com/docs/Integrate/Mail_Servers/postfix.html
