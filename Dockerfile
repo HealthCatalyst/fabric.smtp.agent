@@ -4,11 +4,11 @@ LABEL maintainer="Health Catalyst"
 LABEL version="1.0"
 
 # https://tecadmin.net/install-and-configure-postfix-on-centos-redhat/#
-RUN yum -y install postfix dos2unix
+RUN yum -y install postfix dos2unix rsyslog
 
 # RUN alternatives --set mta /usr/sbin/postfix
 
-COPY main.cnf /etc/postfix/main.cf
+# COPY main.cnf /etc/postfix/main.cf
 
 # RUN postfix reload
 
