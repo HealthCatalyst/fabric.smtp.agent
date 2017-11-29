@@ -4,7 +4,7 @@ LABEL maintainer="Health Catalyst"
 LABEL version="1.0"
 
 # https://tecadmin.net/install-and-configure-postfix-on-centos-redhat/#
-RUN yum -y install postfix dos2unix rsyslog
+RUN yum -y install postfix dos2unix rsyslog cyrus-sasl-plain
 
 # RUN alternatives --set mta /usr/sbin/postfix
 
@@ -22,4 +22,5 @@ EXPOSE 25
 ENTRYPOINT ["./docker-entrypoint.sh"]
 
 # CMD ["postfix", "start"]
+
 
