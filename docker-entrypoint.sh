@@ -81,17 +81,36 @@ function modify_main_cf() {
 
 # https://sendgrid.com/docs/Integrate/Mail_Servers/postfix.html
 
+echo "starting rsyslogd"
 rsyslogd
 
+echo "modifying postfix config"
 modify_main_cf
 
+
+
+echo "starting up postfix service"
 postfix -D -v start
+echo "checking state"
 echo $(get_state)
 
+echo "sending a test"
+# do a test with sendmail to make sure everything is ok
+sendmail -bv imranq2@hotmail.com
+
+while [ ! -f "/var/mail/root" ]; do
+  sleep 10
+  echo "waiting for /var/mail/root"
+done
+
+cat /var/mail/root
+
+echo "staying in an infinite loop here to keep the docker going while postfix is running"
 while true; do
     state=$(get_state)
     if [[ "$state" != "${state/is running/}" ]]; then
         PID=${state//[^0-9]/}
+        # echo "PID=$PID"
         if [[ -z $PID ]]; then
             continue
         fi
@@ -99,6 +118,7 @@ while true; do
             echo "Postfix proces $PID does not exist."
             break
         fi
+        sleep 60  #wait 60s before checking again
     else
         echo "Postfix is not running."
         break
